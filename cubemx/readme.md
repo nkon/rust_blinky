@@ -317,11 +317,12 @@ void SystemInit (void)
 
 * startup_stm32f103xb.s: アセンブラのスタートアップ。
 * main_plain.c: main と SystemInit(スタートアップから呼ばれる)
+* STM32F103RBTx_FLASH.ld: リンカ・スクリプト。CubeMXが生成したのを、そのまま使う。
 
 ```
 CFLAGS=-mcpu=cortex-m3 -mthumb -mfloat-abi=soft
 CFLAGS2=-Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0
-LDFLAGS=-specs=nosys.specs -specs=nano.specs -Tcubemx/nucleo-f103rb/STM32F103RBTx_FLASH.ld -Wl,-Map=output.map -Wl,--gc-sections -lm
+LDFLAGS=-specs=nosys.specs -specs=nano.specs -Tcubemx/nucleo-f103rb/STM32F103RBTx_FLASH.ld -Wl,--gc-sections -lm
 CC=arm-none-eabi-gcc
 AS=arm-none-eabi-as
 
