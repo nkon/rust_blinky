@@ -1,0 +1,10 @@
+[package]
+name = "led"
+version = "0.1.0"
+authors = ["Nobuhiro Kondou <kondou.nobuhiro@gmail.com>"]
+
+[dependencies]
+
+[target.thumbv6m-none-eabi]
+rustc-link-search = ["../libcore-thumbv6m"]
+rustc-link-lib = ["core"]
