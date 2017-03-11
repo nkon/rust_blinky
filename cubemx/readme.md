@@ -91,8 +91,131 @@ int main(void)
 
 通常の Eclipse IDE として Debug もできる。
 
+## システムのツールチェイン
+
+Ac6 の IDE では `~/Ac6/SystemWorkbench/plugins/fr.ac6.mcu.externaltools.arm-none.linux64_1.13.1.201703061524/tools/compiler/`以下のツールが使われるが、基本的には、システムのツールを使いたい。Ac6のツールは、IDEからはバージョンアップができて、arm-none-eabi-gcc 5.4.1 だった。一方、apt-get で標準のリポジトリから入るのは arm-none-eabi-gcc 4.9.3 だった。OpenOCDも、Ac6のものは 現時点で最新の 0.10.0だったが、システムのものは 0.9.0だった(わりとがんばっている)。
+
+IDEでビルドすると Debug/makefile をはじめとする makefile が生成されるので、コマンドラインからビルドでき、その時は、パスが通っているシステムのツールが使われる。
+
+```
+$ pwd
+........../Debug
+$ find . -name '*.o' | xargs rm      # IDE が作ったのを消す。
+$ make all
+Building file: ../startup/startup_stm32f103xb.s
+Invoking: MCU GCC Assembler
+........../nucleo-f103rb/Debug
+arm-none-eabi-as -mcpu=cortex-m3 -mthumb -mfloat-abi=soft -g -o "startup/startup_stm32f103xb.o" "../startup/startup_stm32f103xb.s"
+Finished building: ../startup/startup_stm32f103xb.s
+ 
+Building file: ../Src/main.c
+Invoking: MCU GCC Compiler
+........../nucleo-f103rb/Debug
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft '-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32F103xB -I"........../nucleo-f103rb/Inc" -I"........../nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Inc" -I"........../nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy" -I"........../nucleo-f103rb/Drivers/CMSIS/Device/ST/STM32F1xx/Include" -I"........../nucleo-f103rb/Drivers/CMSIS/Include"  -Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"Src/main.d" -MT"Src/main.o" -o "Src/main.o" "../Src/main.c"
+Finished building: ../Src/main.c
+ 
+...略...
+ 
+Building target: nucleo-f103rb.elf
+Invoking: MCU GCC Linker
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -mfloat-abi=soft -specs=nosys.specs -specs=nano.specs -T"../STM32F103RBTx_FLASH.ld" -Wl,-Map=output.map -Wl,--gc-sections -lm -o "nucleo-f103rb.elf" @"objects.list"  
+/usr/lib/gcc/arm-none-eabi/4.9.3/../../../arm-none-eabi/bin/ld: warning: /usr/lib/gcc/arm-none-eabi/4.9.3/../../../arm-none-eabi/lib/armv7-m/libc_nano.a(lib_a-atexit.o) uses 2-byte wchar_t yet the output is to use 4-byte wchar_t; use of wchar_t values across objects may fail
+...略...   # wchar_t の warning がでているが、問題なし。 
+Finished building target: nucleo-f103rb.elf
+ 
+make --no-print-directory post-build
+Generating binary and Printing size information:
+arm-none-eabi-objcopy -O binary "nucleo-f103rb.elf" "nucleo-f103rb.bin"
+arm-none-eabi-size "nucleo-f103rb.elf"
+   text	   data	    bss	    dec	    hex	filename
+   4320	     12	   1572	   5904	   1710	nucleo-f103rb.elf     # サイズは Ac6 の時と異なる。
+
+$ sudo openocd -f board/st_nucleo_f103rb.cfg -c "init" -c "reset init" -c "stm32f1x mass_erase 0" -c "flash write_image nucleo-f103rb.elf" -c "reset halt" -c "reset run" -c "exit"
+Open On-Chip Debugger 0.9.0 (2015-09-02-10:42)
+Licensed under GNU GPL v2
+For bug reports, read
+	http://openocd.org/doc/doxygen/bugs.html
+Info : The selected transport took over low-level target control. The results might differ compared to plain JTAG/SWD
+adapter speed: 1000 kHz
+adapter_nsrst_delay: 100
+none separate
+srst_only separate srst_nogate srst_open_drain connect_deassert_srst
+Info : Unable to match requested speed 1000 kHz, using 950 kHz
+Info : Unable to match requested speed 1000 kHz, using 950 kHz
+Info : clock speed 950 kHz
+Info : STLINK v2 JTAG v27 API v2 SWIM v15 VID 0x0483 PID 0x374B
+Info : using stlink api v2
+Info : Target voltage: 3.249934
+Info : stm32f1x.cpu: hardware has 6 breakpoints, 4 watchpoints
+target state: halted
+target halted due to debug-request, current mode: Thread 
+xPSR: 0x01000000 pc: 0x08000fbc msp: 0x20005000
+Info : device id = 0x20036410
+Info : flash size = 128kbytes
+stm32x mass erase complete
+target state: halted
+target halted due to breakpoint, current mode: Thread 
+xPSR: 0x61000000 pc: 0x2000003a msp: 0x20005000
+wrote 4332 bytes from file nucleo-f103rb.elf in 0.183826s (23.013 KiB/s)
+target state: halted
+target halted due to debug-request, current mode: Thread 
+xPSR: 0x01000000 pc: 0x08001004 msp: 0x20005000
+```
 ## Makefile
 
-IDEが自動的に作成した Makefile は `Debug/makefile` である。
+これを参考に、Makefile を手書きする。
+
+```
+CFLAGS=-mcpu=cortex-m3 -mthumb -mfloat-abi=soft
+DFLAGS='-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32F103xB
+IFLAGS= -Icubemx/nucleo-f103rb/Inc
+IFLAGS+=-Icubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Inc
+IFLAGS+=-Icubemx/nucleo-f103rb/Drivers/CMSIS/Device/ST/STM32F1xx/Include
+IFLAGS+=-Icubemx/nucleo-f103rb/Drivers/CMSIS/Include
+CFLAGS2=-Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0
+LDFLAGS=-specs=nosys.specs -specs=nano.specs -Tcubemx/nucleo-f103rb/STM32F103RBTx_FLASH.ld -Wl,-Map=output.map -Wl,--gc-sections -lm
+CC=arm-none-eabi-gcc
+AS=arm-none-eabi-as
+
+startup_stm32f103xb.o:cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
+	$(AS) $(CFLAGS) -o $@ $<
+
+main.o:cubemx/nucleo-f103rb/Src/main.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal_msp.o:cubemx/nucleo-f103rb/Src/stm32f1xx_hal_msp.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_it.o:cubemx/nucleo-f103rb/Src/stm32f1xx_it.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+system_stm32f1xx.o:cubemx/nucleo-f103rb/Src/system_stm32f1xx.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal_gpio.o:cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal_cortex.o:cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal_rcc.o:cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal.o:cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+led.elf:stm32f1xx_hal.o stm32f1xx_hal_cortex.o stm32f1xx_hal_gpio.o stm32f1xx_hal_rcc.o main.o stm32f1xx_hal_msp.o system_stm32f1xx.o stm32f1xx_it.o startup_stm32f103xb.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+.PHONY: flash
+flash:
+	sudo openocd -f board/st_nucleo_f103rb.cfg -c "init" -c "reset init" -c "stm32f1x mass_erase 0" -c "flash write_image led.elf" -c "reset halt" -c "reset run" -c "exit"
+
+.PHONY: clean
+clean:
+	rm *.elf *.o *.map
+```
+
+
 
 

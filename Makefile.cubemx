@@ -1,0 +1,48 @@
+CFLAGS=-mcpu=cortex-m3 -mthumb -mfloat-abi=soft
+DFLAGS='-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32F103xB
+IFLAGS= -Icubemx/nucleo-f103rb/Inc
+IFLAGS+=-Icubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Inc
+IFLAGS+=-Icubemx/nucleo-f103rb/Drivers/CMSIS/Device/ST/STM32F1xx/Include
+IFLAGS+=-Icubemx/nucleo-f103rb/Drivers/CMSIS/Include
+CFLAGS2=-Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0
+LDFLAGS=-specs=nosys.specs -specs=nano.specs -Tcubemx/nucleo-f103rb/STM32F103RBTx_FLASH.ld -Wl,-Map=output.map -Wl,--gc-sections -lm
+CC=arm-none-eabi-gcc
+AS=arm-none-eabi-as
+
+startup_stm32f103xb.o: cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
+	$(AS) $(CFLAGS) -o $@ $<
+
+main.o: cubemx/nucleo-f103rb/Src/main.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal_msp.o: cubemx/nucleo-f103rb/Src/stm32f1xx_hal_msp.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_it.o: cubemx/nucleo-f103rb/Src/stm32f1xx_it.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+system_stm32f1xx.o: cubemx/nucleo-f103rb/Src/system_stm32f1xx.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal_gpio.o: cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal_cortex.o: cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal_rcc.o: cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+stm32f1xx_hal.o: cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
+
+led.elf: stm32f1xx_hal.o stm32f1xx_hal_cortex.o stm32f1xx_hal_gpio.o stm32f1xx_hal_rcc.o main.o stm32f1xx_hal_msp.o system_stm32f1xx.o stm32f1xx_it.o startup_stm32f103xb.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+.PHONY: flash
+flash: led.elf
+	sudo openocd -f board/st_nucleo_f103rb.cfg -c "init" -c "reset init" -c "stm32f1x mass_erase 0" -c "flash write_image led.elf" -c "reset halt" -c "reset run" -c "exit"
+
+.PHONY: clean
+clean:
+	rm *.elf *.o *.map
