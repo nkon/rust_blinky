@@ -407,11 +407,11 @@ clean:
 CubeMX で作ったモノ(C)、Cで最小限にしたモノ、rust を比較。Cとrustで、ほとんど同じ。rustにオーバヘッドが無いことがわかる。
 
 ```
-$ arm-none-eabi-size *.elf_
+$ arm-none-eabi-size *.elf
    text	   data	    bss	    dec	    hex	filename
-   4320	     12	   1572	   5904	   1710	cubemx.elf_
-    780	      8	   1568	   2356	    934	plain.elf_
-    784	      8	   1568	   2360	    938	rust.elf_
+   4320	     12	   1572	   5904	   1710	cubemx.elf
+    780	      8	   1568	   2356	    934	plain.elf
+    784	      8	   1568	   2360	    938	rust.elf
 ```
 
 
