@@ -214,6 +214,16 @@ libcore-thumbv6m/
 
 これが最小限のプログラムだ。
 
+* `#![no_std]`で std を使わない。自動的に libcore が使われる。
+  - `#![...]`はコンパイラのスイッチ、`#[...]`は言語機能の使用、だろう。
+* `#![no_main]`で 標準的な main を使わない。以下で main と書いても、単なる、アセンブラから呼ばれるルーチンとなる。
+* `#![feature(lang_items)]`で`#![lang="..."]`を使う準備をする。
+* `#![feature(start)]`で `#[start]`を使う準備をする。
+* `main`の定義
+  - `#[no_mangle]`で名前修飾を使わない。
+  - `#[start]`でエントリポイントを指定。
+* 後半の関数は、コンパイラが使う関数。現時点ではおまじない。
+
 ```
 #![no_std] // std を使わない。1.6.0以降だと、これで自動的に libcore が使われる。
 #![no_main] // rust の標準的な main を使わない
@@ -235,9 +245,21 @@ pub fn panic_fmt(_fmt: &core::fmt::Arguments, _file_line: &(&'static str, usize)
 extern fn eh_personality (){}
 ```
 
-ビルドしてみよう。
+ビルドしてみよう。オプションは写経。
+
+* -g: -C debuginfo=2 と等しい。
+* -O: -C opt-level=2 と等しい。
+  + -C XXX は codegen のオプション。
+* -Z no-landing-pads
+  + -Z XXX は internal option for debugging rustc
+* --target thumbv6m-none-eabi: 上述。
+* --emit obj: object file を出力。
+* -L ../libcore-thumbv6m: ライブラリを指定。
+* -o led.o: 出力ファイル名。
+* src/main.rs: ソースファイル名。
+
 ```
-$ rustc -C opt-level=2 -Z no-landing-pads --target thumbv6m-none-eabi -g --emit obj -L ../libcore-thumbv6m -o led.o src/main.rs
+$ rustc -g -O -Z no-landing-pads --target thumbv6m-none-eabi --emit obj -L ../libcore-thumbv6m -o led.o src/main.rs
 ```
 エラー無く終って、カレントディレクトリに led.o ができていけばOK。
 
@@ -248,6 +270,11 @@ Cで開発するときと同様に、CubeMXで初期化コードを生成する�
 ## Lチカ
 
 Nucleo-F103FBには、User LED(LD2)が搭載されている。LD2は、PA5ピンに接続されている。ここで、CubeMXのコードをカンニングすれば、それを操作するためのアドレスがわかる。
+
+* レジスタを `let xxx = ADDRESS as *mut u32;` のように、`u32` の mutable なポインタとして定義して、アドレスで初期化。
+* レジスタに書くときは、`volatile_store`。
+  - `#![feature(core_intrinsics)]` →`use core::intrinsics::volatile_store`で使えるようになる。
+  - `unsafe` で囲む。
 
 ```
 #![no_std] // std を使わない。1.6.0以降だと、これで自動的に libcore が使われる。
@@ -366,7 +393,7 @@ CFLAGS2=-Og -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length
 LDFLAGS=-specs=nosys.specs -specs=nano.specs -Tcubemx/nucleo-f103rb/STM32F103RBTx_FLASH.ld -Wl,--gc-sections -lm
 CC=arm-none-eabi-gcc
 AS=arm-none-eabi-as
-RUSTC=rustc -C opt-level=2 -Z no-landing-pads --target thumbv6m-none-eabi -g --emit obj -L ../libcore-thumbv6m
+RUSTC=rustc -O -g -Z no-landing-pads --target thumbv6m-none-eabi --emit obj -L ../libcore-thumbv6m
 
 startup_stm32f103xb.o: cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
 	$(AS) $(CFLAGS) -o $@ $<
