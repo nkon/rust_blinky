@@ -416,6 +416,87 @@ $ arm-none-eabi-size *.elf_
 ```
 
 
+## デバッグ
+
+これまで見たように、フロントエンドは Rust だが、バックエンドは gcc なので、普通に gdb が使える。
+
+OpenOCD を使って書き込んだ後で、OpenOCD のサーバを起動し、`target remote localhost:3333`で接続する。
+
+```
+$ arm-none-eabi-gdb led.elf
+GNU gdb (7.10-1ubuntu3+9) 7.10
+Copyright (C) 2015 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "--host=x86_64-linux-gnu --target=arm-none-eabi".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+<http://www.gnu.org/software/gdb/documentation/>.
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from led.elf...done.
+(gdb) target remote localhost:3333
+Remote debugging using localhost:3333
+0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
+    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+508	        if self.start < self.end {
+(gdb) continue 
+Continuing.
+^C
+Program received signal SIGINT, Interrupt.
+0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
+    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+508	        if self.start < self.end {
+(gdb) l
+503	{
+504	    type Item = A;
+505	
+506	    #[inline]
+507	    fn next(&mut self) -> Option<A> {
+508	        if self.start < self.end {
+509	            let mut n = self.start.add_one();
+510	            mem::swap(&mut n, &mut self.start);
+511	            Some(n)
+512	        } else {
+(gdb) finish
+Run till exit from #0  0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
+    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+main::main () at /home/nkon/src/rust/led/src/main.rs:52
+52	        for _ in 1..400000 {
+(gdb) ni
+0x080001de in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
+    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+508	        if self.start < self.end {
+(gdb) si
+0x080001e0	508	        if self.start < self.end {
+(gdb) finish 
+Run till exit from #0  0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
+    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+main::main () at /home/nkon/src/rust/led/src/main.rs:52
+52	        for _ in 1..400000 {
+(gdb) si
+0x080001de in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
+    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+508	        if self.start < self.end {
+(gdb) next
+^C
+Program received signal SIGINT, Interrupt.
+0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
+    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+508	        if self.start < self.end {
+(gdb) quit
+A debugging session is active.
+
+	Inferior 1 [Remote target] will be detached.
+
+Quit anyway? (y or n) y
+Detaching from program: /home/nkon/src/rust/led/led.elf, Remote target
+Ending remote debugging.
+```
 
 ## HAL をリンクする
 
