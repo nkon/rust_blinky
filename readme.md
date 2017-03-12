@@ -497,7 +497,7 @@ Detaching from program: ~/src/rust/led/led.elf, Remote target
 Ending remote debugging.
 ```
 
-同様に、VS Code を使っているなら、(Native Debug Plugin)[https://marketplace.visualstudio.com/items?itemName=webfreak.debug]を使えは、`.vscode/launch.json` を設定することで、IDEからデバッグできる。
+同様に、VS Code を使っているなら、[Native Debug Plugin](https://marketplace.visualstudio.com/items?itemName=webfreak.debug)を使えは、`.vscode/launch.json` を設定することで、IDEからデバッグできる。
 
 ![vscode-gdb.png](vscode-gdb.png)
 
