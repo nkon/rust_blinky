@@ -359,9 +359,7 @@ pub extern fn SystemInit(){
         volatile_store(rcc_cir, 0x009f0000);
         volatile_store(scb_vtor, FLASH_BASE | VECT_TAB_OFFSET);
     }
-
 }
-
 
 #[lang="panic_fmt"] // コンパイラの失敗メカニズムのために必要な関数
 pub fn panic_fmt(_fmt: &core::fmt::Arguments, _file_line: &(&'static str, usize)) -> ! {
