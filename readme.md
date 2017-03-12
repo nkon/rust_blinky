@@ -497,6 +497,10 @@ Detaching from program: ~/src/rust/led/led.elf, Remote target
 Ending remote debugging.
 ```
 
+同様に、VS Code を使っているなら、(Native Debug Plugin)[https://marketplace.visualstudio.com/items?itemName=webfreak.debug]を使えは、`.vscode/launch.json` を設定することで、IDEからデバッグできる。
+
+![vscode-gdb.png](vscode-gdb.png)
+
 ## HAL をリンクする
 
 このように、MCUのレジスタ・アドレスをデータシートで調べて、バイナリを書き込めば、Rust でプログラムできるが、いちいち調べるのもたいへんだ。そのために CubeMXやHALが用意されているが、それは C で書かれている。Rust の FFI(多言語インターフェイス)を使って、Cで書かれたHALをリンクすれば良い。

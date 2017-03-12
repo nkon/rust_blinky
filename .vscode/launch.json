@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [ 
+        {
+            "name": "Debug",
+            "type": "gdb",
+            "request": "attach",
+            "gdbpath": "/usr/bin/arm-none-eabi-gdb",
+            "executable":"./led.elf",
+            "target": "localhost:3333",
+            "remote": true,
+            "cwd": "${workspaceRoot}"
+        }
+    ]
+}
