@@ -402,8 +402,6 @@ clean:
 
 これで、Rust + STM32 で Lチカできた。
 
-一部、C を用いたが、Rust の型制約の中で、ビット演算ができれば、Cは無くせる。
-
 ## 比較
 
 CubeMX で作ったモノ(C)、Cで最小限にしたモノ、rust を比較。Cとrustで、ほとんど同じ。rustにオーバヘッドが無いことがわかる。
@@ -443,14 +441,14 @@ Reading symbols from led.elf...done.
 (gdb) target remote localhost:3333
 Remote debugging using localhost:3333
 0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
-    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+    at ~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
 508	        if self.start < self.end {
 (gdb) continue 
 Continuing.
 ^C
 Program received signal SIGINT, Interrupt.
 0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
-    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+    at ~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
 508	        if self.start < self.end {
 (gdb) l
 503	{
@@ -465,29 +463,29 @@ Program received signal SIGINT, Interrupt.
 512	        } else {
 (gdb) finish
 Run till exit from #0  0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
-    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+    at ~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
 main::main () at /home/nkon/src/rust/led/src/main.rs:52
 52	        for _ in 1..400000 {
 (gdb) ni
 0x080001de in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
-    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+    at ~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
 508	        if self.start < self.end {
 (gdb) si
 0x080001e0	508	        if self.start < self.end {
 (gdb) finish 
 Run till exit from #0  0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
-    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+    at ~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
 main::main () at /home/nkon/src/rust/led/src/main.rs:52
 52	        for _ in 1..400000 {
 (gdb) si
 0x080001de in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
-    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+    at ~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
 508	        if self.start < self.end {
 (gdb) next
 ^C
 Program received signal SIGINT, Interrupt.
 0x080001e0 in core::iter::range::{{impl}}::next<i32> (self=<optimized out>)
-    at /home/nkon-ubuntu1604/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
+    at ~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore/iter/range.rs:508
 508	        if self.start < self.end {
 (gdb) quit
 A debugging session is active.
@@ -495,7 +493,7 @@ A debugging session is active.
 	Inferior 1 [Remote target] will be detached.
 
 Quit anyway? (y or n) y
-Detaching from program: /home/nkon/src/rust/led/led.elf, Remote target
+Detaching from program: ~/src/rust/led/led.elf, Remote target
 Ending remote debugging.
 ```
 
