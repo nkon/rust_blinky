@@ -38,7 +38,7 @@ Ubuntu なら apt-get で入る。バージョンが古いが、STM32なら大�
 
 ## Lチカ
 
-CubeMXで生成した後、main.c に Lチカ・コードを追加する。
+CubeMXで生成した後、`main.c` に Lチカ・コードを追加する。
 
 * `MX_GPIO_Init()`で、CubeMXで設定したとおりに I/O が設定される。
 * `HAL_GPIO_WritePin()`は、HALの関数。
@@ -223,8 +223,8 @@ clean:
 * クロックはデフォルトのまま。
 * GPIOにクロックを供給。
 * GPIOのモードをセット。
-* BSRR に書き込んで、ポートを ON/OFF。
-* system_stm32f1xx.c にあった SystemInit(スタートアップから呼ばれる) を main.c に移動。
+* `BSRR` に書き込んで、ポートを ON/OFF。
+* `system_stm32f1xx.c` にあった `SystemInit`(スタートアップから呼ばれる) を main.c に移動。
 * レジスタアドレスの定義をした。おかげで、`#include`や、ビルド時の`-I`が不要になった。ついでに、`-D`も不要になった。
 
 ```
@@ -315,9 +315,9 @@ void SystemInit (void)
 ```
 これの Makefile は次のとおり。
 
-* startup_stm32f103xb.s: アセンブラのスタートアップ。
-* main_plain.c: main と SystemInit(スタートアップから呼ばれる)
-* STM32F103RBTx_FLASH.ld: リンカ・スクリプト。CubeMXが生成したのを、そのまま使う。
+* `startup_stm32f103xb.s`: アセンブラのスタートアップ。
+* `main_plain.c`: `main` と `SystemInit`(スタートアップから呼ばれる)
+* `STM32F103RBTx_FLASH.ld`: リンカ・スクリプト。CubeMXが生成したのを、そのまま使う。
 
 ```
 CFLAGS=-mcpu=cortex-m3 -mthumb -mfloat-abi=soft

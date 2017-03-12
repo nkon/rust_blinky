@@ -9,13 +9,10 @@ RUSTC=rustc -g -O -Z no-landing-pads --target thumbv6m-none-eabi --emit obj -L .
 startup_stm32f103xb.o: cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
 	$(AS) $(CFLAGS) -o $@ $<
 
-system_init.o: src/system_init.c
-	$(CC) $(CFLAGS) $(CFLAGS2) -o $@ $<
-
 main.o: src/main.rs
 	$(RUSTC) -o $@ $<
 
-led.elf: main.o startup_stm32f103xb.o system_init.o
+led.elf: main.o startup_stm32f103xb.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 .PHONY: flash

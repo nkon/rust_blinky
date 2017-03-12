@@ -247,16 +247,16 @@ extern fn eh_personality (){}
 
 ビルドしてみよう。オプションは写経。
 
-* -g: -C debuginfo=2 と等しい。
-* -O: -C opt-level=2 と等しい。
-  + -C XXX は codegen のオプション。
-* -Z no-landing-pads
-  + -Z XXX は internal option for debugging rustc
-* --target thumbv6m-none-eabi: 上述。
-* --emit obj: object file を出力。
-* -L ../libcore-thumbv6m: ライブラリを指定。
-* -o led.o: 出力ファイル名。
-* src/main.rs: ソースファイル名。
+* `-g`: `-C debuginfo=2` と等しい。
+* `-O`: `-C opt-level=2` と等しい。
+  + `-C XXX` は codegen のオプション。
+* `-Z no-landing-pads`
+  + `-Z XXX` は internal option for debugging rustc
+* `--target thumbv6m-none-eabi`: 上述。
+* `--emit obj`: object file を出力。
+* `-L ../libcore-thumbv6m`: ライブラリを指定。
+* `-o led.o`: 出力ファイル名。
+* `src/main.rs`: ソースファイル名。
 
 ```
 $ rustc -g -O -Z no-landing-pads --target thumbv6m-none-eabi --emit obj -L ../libcore-thumbv6m -o led.o src/main.rs
@@ -275,6 +275,7 @@ Nucleo-F103FBには、User LED(LD2)が搭載されている。LD2は、PA5ピン
 * レジスタに書くときは、`volatile_store`。
   - `#![feature(core_intrinsics)]` →`use core::intrinsics::volatile_store`で使えるようになる。
   - `unsafe` で囲む。
+* `system_stm32f1xx.c` で提供されていた `SystemInit`(スタートアップから呼ばれる)も `#[no_mangle]`で実装する。
 
 ```
 #![no_std] // std を使わない。1.6.0以降だと、これで自動的に libcore が使われる。
@@ -291,12 +292,37 @@ pub const PERIPH_BASE: u32      = 0x40000000;
 
 pub const APB2PERIPH_BASE: u32  = PERIPH_BASE + 0x10000;
 pub const GPIOA_BASE: u32       = APB2PERIPH_BASE + 0x0800;
+pub const CRL_OFFSET: u32       = 0x00;
 pub const BSRR_OFFSET: u32      = 0x10;
 pub const GPIO_PIN_5: u32       = 5;
+
+pub const AHBPERIPH_BASE: u32   = PERIPH_BASE + 0x20000;
+pub const RCC_BASE: u32         = AHBPERIPH_BASE + 0x1000;
+pub const CR_OFFSET: u32        = 0x00;
+pub const CFGR_OFFSET: u32      = 0x04;
+pub const CIR_OFFSET: u32       = 0x08;
+pub const APB2ENR_OFFSET: u32   = 0x18;
+
+pub const FLASH_BASE: u32       = 0x08000000;
+pub const VECT_TAB_OFFSET: u32  = 0x0;
+pub const VTOR_OFFSET: u32      = 8;
+
+pub const SCS_BASE: u32         = 0xE000E000;
+pub const SCB_BASE: u32         = SCS_BASE + 0x0D00;
 
 #[no_mangle] // mangling(名前修飾)を使わない。
 #[start] // エントリーポイントを指定。
 pub extern fn main() {
+
+    let apb2enr = (RCC_BASE+APB2ENR_OFFSET) as *mut u32;
+    let crl     = (GPIOA_BASE+CRL_OFFSET) as *mut u32;
+
+    unsafe {
+        volatile_store(apb2enr, *apb2enr | (1<<2));
+        volatile_store(crl, *crl & (!(6<<20)));
+        volatile_store(crl, *crl | (2<<20));
+    }
+
     let bsrr    = (GPIOA_BASE+BSRR_OFFSET)  as *mut u32;
 
     loop {
@@ -317,6 +343,26 @@ pub extern fn main() {
 	}
 }
 
+#[no_mangle]
+pub extern fn SystemInit(){
+    let rcc_cr   = (RCC_BASE+CR_OFFSET) as *mut u32;
+    let rcc_cfgr = (RCC_BASE+CFGR_OFFSET) as *mut u32;
+    let rcc_cir  = (RCC_BASE+CIR_OFFSET) as *mut u32;
+    let scb_vtor = (SCB_BASE+VTOR_OFFSET) as *mut u32;
+
+    unsafe {
+        volatile_store(rcc_cr, *rcc_cr | 0x00000001);
+        volatile_store(rcc_cfgr, *rcc_cfgr & 0xf0f0000);
+        volatile_store(rcc_cr, *rcc_cr & 0xfef6ffff);
+        volatile_store(rcc_cr, *rcc_cr & 0xfffbffff);
+        volatile_store(rcc_cfgr, *rcc_cfgr & 0xff80ffff);
+        volatile_store(rcc_cir, 0x009f0000);
+        volatile_store(scb_vtor, FLASH_BASE | VECT_TAB_OFFSET);
+    }
+
+}
+
+
 #[lang="panic_fmt"] // コンパイラの失敗メカニズムのために必要な関数
 pub fn panic_fmt(_fmt: &core::fmt::Arguments, _file_line: &(&'static str, usize)) -> ! {
 	loop {}
@@ -326,65 +372,7 @@ pub fn panic_fmt(_fmt: &core::fmt::Arguments, _file_line: &(&'static str, usize)
 extern fn eh_personality (){}
 ```
 
-ビット演算を Rust でやる方法がよくわからなかったので、それらは `system_init.c`にまとめた。
-
-```
-#define PERIPH_BASE         (0x40000000) /*!< Peripheral base address in the alias region */
-
-#define APB2PERIPH_BASE     (PERIPH_BASE + 0x10000)
-#define GPIOA_BASE          (APB2PERIPH_BASE+0x0800)
-#define CRL_OFFSET          0x00
-
-#define AHBPERIPH_BASE      (PERIPH_BASE + 0x20000)
-#define RCC_BASE            (AHBPERIPH_BASE + 0x1000)
-#define CR_OFFSET           0x00
-#define CFGR_OFFSET         0x04
-#define CIR_OFFSET          0x08
-#define APB2ENR_OFFSET      0x18
-
-#define FLASH_BASE          (0x08000000) /*!< FLASH base address in the alias region */
-#define VECT_TAB_OFFSET     0x0 /*!< Vector Table base offset field. This value must be a multiple of 0x200. */
-#define VTOR_OFFSET         8
-
-#define SCS_BASE            (0xE000E000UL)                            /*!< System Control Space Base Address */
-#define SCB_BASE            (SCS_BASE +  0x0D00UL)                    /*!< System Control Block Base Address */
-
-void SystemInit (void)
-{
-    volatile unsigned long *rcc_reg;
-    volatile unsigned long *crl;
-    volatile unsigned long *apb2enr;
-
-    rcc_reg = (unsigned long *)(RCC_BASE+CR_OFFSET);
-    *rcc_reg |= 0x00000001;
-
-    rcc_reg = (unsigned long *)(RCC_BASE+CFGR_OFFSET);
-    *rcc_reg &= 0xF0FF0000;
-  
-    rcc_reg = (unsigned long *)(RCC_BASE+CR_OFFSET);
-    *rcc_reg &= 0xFEF6FFFF;
-
-    *rcc_reg &= 0xFFFBFFFF;
-
-    rcc_reg = (unsigned long *)(RCC_BASE+CFGR_OFFSET);
-    *rcc_reg &= 0xFF80FFFF;
-
-    rcc_reg = (unsigned long *)(RCC_BASE+CIR_OFFSET);
-    *rcc_reg = 0x009F0000;
-
-    rcc_reg = (unsigned long *)(SCB_BASE+VTOR_OFFSET);
-    *rcc_reg = FLASH_BASE | VECT_TAB_OFFSET;
-
-    crl     = (unsigned long *)(GPIOA_BASE+CRL_OFFSET);
-    apb2enr = (unsigned long *)(RCC_BASE+APB2ENR_OFFSET);
-
-    *apb2enr|= 1 << 2;
-    *crl &= (~(6 << 20));   // clear CNF5 : PP mode
-    *crl |= (2 << 20);      // set MODE5: Output 2MHz
-}
-```
-
-startup_stm32f103xb.s も、そのまま使う。
+startup_stm32f103xb.s は、そのまま使う。
 
 Makefile は、次のようになる。
 ```
@@ -398,13 +386,10 @@ RUSTC=rustc -O -g -Z no-landing-pads --target thumbv6m-none-eabi --emit obj -L .
 startup_stm32f103xb.o: cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
 	$(AS) $(CFLAGS) -o $@ $<
 
-system_init.o: src/system_init.c
-	$(CC) $(CFLAGS) $(CFLAGS2) -o $@ $<
-
 main.o: src/main.rs
 	$(RUSTC) -o $@ $<
 
-led.elf: main.o startup_stm32f103xb.o system_init.o
+led.elf: main.o startup_stm32f103xb.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 .PHONY: flash
@@ -440,3 +425,4 @@ $ arm-none-eabi-size *.elf_
 
 
 
+## Cargo + build.rs
