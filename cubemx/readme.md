@@ -17,11 +17,11 @@
 
 ## CubeMX
 
-STのマイコンは、STM32CubeMX というツールで、ベリフェラルを設定して、HALのコードをインポートしたプロジエクトの雛形を生成することができる。
+STのマイコンは、STM32CubeMX というツールでぺリフェラルを設定し、HALのコードをインポートしたプロジエクトの雛形を生成することができる。
 
 * まずは、<a href="http://www.st.com/content/st_com/ja/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-configurators-and-code-generators/stm32cubemx.html">CubeMX</a>をダウンロード。個人情報が必要になるが仕方がない。
 * アーカイブを展開して、Linuxのインストーラを実行すればインストーラ完了。
-* STM32F1 のファームウエアをダウンロードしておく。
+* STM32F1 のファームウェアをダウンロードしておく。
 * ボードを適切に選ぶと、ボードに搭載されているLEDに合わせて、I/Oが設定される。
 * 生成タイプに SW4STM32 を選んで Code Generate する。
 * プロジエクトを SW4STM32 で開く。
@@ -42,7 +42,7 @@ CubeMXで生成した後、`main.c` に Lチカ・コードを追加する。
 
 * `MX_GPIO_Init()`で、CubeMXで設定したとおりに I/O が設定される。
 * `HAL_GPIO_WritePin()`は、HALの関数。
-* `LD2_GPIO_Port`、`LD2_Pin`は、CubeMX で Nucleo のボード設定を読み込んだら、PA5にLD2の別名が設定されたので、ポート名ではなく機能名で呼べるのだ。
+* `LD2_GPIO_Port`、`LD2_Pin`は、CubeMX で Nucleo のボード設定を読み込んだらPA5にLD2の別名が設定されたので、ポート名ではなく機能名で呼べるのだ。
 
 ```
 int main(void)
@@ -87,15 +87,15 @@ int main(void)
 }
 ```
 
-デフォルトの設定でビルド。Project の右クリック→Target→Program Chip...で OpenOCD→ST-Link経由で焼ける。
+デフォルトの設定でビルド。Project の右クリック→Target→Program Chip…で OpenOCD→ST-Link経由で焼ける。
 
 通常の Eclipse IDE として Debug もできる。
 
 ## システムのツールチェイン
 
-Ac6 の IDE では `~/Ac6/SystemWorkbench/plugins/fr.ac6.mcu.externaltools.arm-none.linux64_1.13.1.201703061524/tools/compiler/`以下のツールが使われるが、基本的には、システムのツールを使いたい。Ac6のツールは、IDEからはバージョンアップができて、arm-none-eabi-gcc 5.4.1 だった。一方、apt-get で標準のリポジトリから入るのは arm-none-eabi-gcc 4.9.3 だった。OpenOCDも、Ac6のものは 現時点で最新の 0.10.0だったが、システムのものは 0.9.0だった(わりとがんばっている)。
+Ac6 の IDE では `~/Ac6/SystemWorkbench/plugins/fr.ac6.mcu.externaltools.arm-none.linux64_1.13.1.201703061524/tools/compiler/`以下のツールが使われるが、基本的には、システムのツールを使いたい。Ac6のツールは、IDEからはバージョンアップができて、arm-none-eabi-gcc 5.4.1 だった。一方、apt-get で標準のリポジトリから入るのは arm-none-eabi-gcc 4.9.3 だった。OpenOCDも、Ac6のものは現時点で最新の 0.10.0だったが、システムのものは 0.9.0だった(わりとがんばっている)。
 
-IDEでビルドすると Debug/makefile をはじめとする makefile が生成されるので、コマンドラインからビルドでき、その時は、パスが通っているシステムのツールが使われる。
+IDEでビルドすると Debug/makefile をはじめとする makefile が生成されるので、コマンドラインからビルドでき、その時はパスが通っているシステムのツールが使われる。
 
 ```
 $ pwd
@@ -316,7 +316,7 @@ void SystemInit (void)
 これの Makefile は次のとおり。
 
 * `startup_stm32f103xb.s`: アセンブラのスタートアップ。
-* `main_plain.c`: `main` と `SystemInit`(スタートアップから呼ばれる)
+* `main_plain.c`: `main` と `SystemInit`(スタートアップから呼ばれる)。
 * `STM32F103RBTx_FLASH.ld`: リンカ・スクリプト。CubeMXが生成したのを、そのまま使う。
 
 ```
