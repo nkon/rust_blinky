@@ -4,6 +4,7 @@
       "max": 3
     },
     "spellcheck-tech-word": true,
-    "no-mix-dearu-desumasu": true
+    "no-mix-dearu-desumasu": true,
+    "preset-ja-technical-writeing": true
   }
 }
