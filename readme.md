@@ -162,7 +162,7 @@ Cortex-M4の場合は<a href="http://infocenter.arm.com/help/index.jsp?topic=/co
 
 none は OS無しということ。
 
-eabi は eabi とう呼び出し規約。古くは OABIというものがあって、それと区別するために名前が付いているが、最近は eabi一択でOK。最後の hf は、Hard Float(ハードウエアによる浮動小数点演算)。
+eabi は eabi とう呼び出し規約。古くは OABIというものがあって、それと区別するために名前が付いているが、最近は eabi一択でOK。最後の hf は、Hard Float(ハードウェアによる浮動小数点演算)。
 
 では、クロスビルドをする。
 ```
@@ -190,7 +190,7 @@ $ rustup override set nightly-x86_64-unknown-linux-gnu
 
 ソースを取ってくる。
 
-通常どおり git でとってきても良いが、次のコマンドを実行すれば、`~/.cargo` の下にソースを取ってきてくれる。
+通常どおり Git でとってきても良いが、次のコマンドを実行すれば、`~/.cargo` の下にソースを取ってきてくれる。
 ```
 rustup component add rust-src
 ```
@@ -264,7 +264,7 @@ $ rustc -g -O -Z no-landing-pads --target thumbv6m-none-eabi --emit obj -L ../li
 ```
 エラー無く終って、カレントディレクトリに led.o ができていけばOK。
 
-## ハードウエア固有の設定
+## ハードウェア固有の設定
 
 Cで開発するときと同様に、CubeMXで初期化コードを生成する。toolchain には SW4STM32を選ぶ。SW4STM32は、OpenOCD+Eclipse+gccという、オープン系のワークベンチだ。それを使って、[最小限の Lチカ・コード](cubemx/readme.md)を書き、それを rust に移植する。
 
@@ -417,7 +417,7 @@ $ arm-none-eabi-size *.elf
 
 ## デバッグ
 
-これまで見たように、フロントエンドは Rust だが、バックエンドは gcc なので、普通に gdb が使える。
+これまで見たように、フロントエンドは Rust だがバックエンドは gcc なので、普通に gdb が使える。
 
 OpenOCD を使って書き込んだ後で、OpenOCD のサーバを起動し、`target remote localhost:3333`で接続する。
 
@@ -503,7 +503,7 @@ Ending remote debugging.
 
 ## HAL をリンクする
 
-このように、MCUのレジスタ・アドレスをデータシートで調べて、バイナリを書き込めば、Rust でプログラムできるが、いちいち調べるのもたいへんだ。そのために CubeMXやHALが用意されているが、それは C で書かれている。Rust の FFI(多言語インターフェイス)を使って、Cで書かれたHALをリンクすれば良い。
+このように、MCUのレジスタ・アドレスをデータシートで調べてバイナリを書き込めば、Rust でプログラムできる。しかと、いちいち調べるのもたいへんだ。そのために CubeMXやHALが用意されているが、それは C で書かれている。Rust の FFI(多言語インタフェース)を使って、Cで書かれたHALをリンクすれば良い。
 
 
 
