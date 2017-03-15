@@ -152,7 +152,7 @@ x86_64-unknown-openbsd
 ```
 いっぱいあるが、この中で `thumbv7m-none-eabi`が求めるものだ。
 
-この記法は target triple と呼ばれているもので、一番目の項目がアーキテクチャ、二番目の項目が OS、三番目の項目が呼び出し規約を表す。
+この記法は target triple と呼ばれているもので、1番目の項目がアーキテクチャ、2番目の項目が OS、3番目の項目が呼び出し規約を表す。
 
 Cortex-M0+の場合は<a href="http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0662b/BABIHJGA.html">CPUアーキテクチャが ARMv6-M</a>,<a href="http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0337gj/index.html">命令アーキテクチャが Thumb</a> なので、あわせて thumbv6m。
 
@@ -190,7 +190,7 @@ $ rustup override set nightly-x86_64-unknown-linux-gnu
 
 ソースを取ってくる。
 
-通常どおり git でとってきても良いが、次のコマンドを実行すれば、`~/.cargo` の下にソースを取ってきてくれる。
+通常どおり Git でとってきても良いが、次のコマンドを実行すれば、`~/.cargo` の下にソースを取ってきてくれる。
 ```
 rustup component add rust-src
 ```
@@ -217,7 +217,7 @@ libcore-thumbv6m/
 * `#![no_std]`で std を使わない。自動的に libcore が使われる。
   - `#![...]`は、それが含まれるモノ(この場合はプログラム全体)を変更する。
   - `#[...]`次に来るものを変更する。
-* `#![no_main]`で 標準的な main を使わない。以下で main と書いても、単なる、アセンブラから呼ばれるルーチンとなる。
+* `#![no_main]`で、標準的な main を使わない。以下で main と書いても、単なる、アセンブラから呼ばれるルーチンとなる。
 * `#![feature(lang_items)]`で`#![lang="..."]`を使う準備をする。
 * `#![feature(start)]`で `#[start]`を使う準備をする。
 * `main`の定義
@@ -252,7 +252,7 @@ extern fn eh_personality (){}
 * `-O`: `-C opt-level=2` と等しい。
   + `-C XXX` は codegen のオプション。
 * `-Z no-landing-pads`
-  + `-Z XXX` は internal option for debugging rustc
+  + `-Z XXX` は internal option for debugging rustc。
 * `--target thumbv6m-none-eabi`: 上述。
 * `--emit obj`: object file を出力。
 * `-L ../libcore-thumbv6m`: ライブラリを指定。
@@ -417,7 +417,7 @@ $ arm-none-eabi-size *.elf
 
 ## デバッグ
 
-これまで見たように、フロントエンドは Rust だが、バックエンドは gcc なので、普通に gdb が使える。
+これまで見たように、フロントエンドは Rust だがバックエンドは gcc なので、普通に gdb が使える。
 
 OpenOCD を使って書き込んだ後で、OpenOCD のサーバを起動し、`target remote localhost:3333`で接続する。
 
@@ -503,8 +503,7 @@ Ending remote debugging.
 
 ## HAL をリンクする
 
-このように、MCUのレジスタ・アドレスをデータシートで調べて、バイナリを書き込めば、Rust でプログラムできるが、いちいち調べるのもたいへんだ。そのために CubeMXやHALが用意されているが、それは C で書かれている。Rust の FFI(多言語インターフェイス)を使って、Cで書かれたHALをリンクすれば良い。
-
+このように、MCUのレジスタ・アドレスをデータシートで調べてバイナリを書き込めば、Rust でプログラムできる。しかし、いちいち調べるのもたいへんだ。そのために CubeMXやHALが用意されているが、それは C で書かれている。Rust の FFI(多言語インタフェース)を使って、Cで書かれたHALをリンクすれば良い。
 
 
 ## Cargo + build.rs
