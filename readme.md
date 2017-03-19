@@ -618,14 +618,14 @@ pub struct GPIO_InitTypeDef {
 }
 
 #[repr(C)]
-pub struct GPIO_TypeDef {
-    pub CRL: u32,
-    pub CRH: u32,
-    pub IDR: u32,
-    pub ODR: u32,
-    pub BSRR: u32,
-    pub BRR: u32,
-    pub LCKR: u32
+pub struct TypeDef {
+    CRL: u32,
+    CRH: u32,
+    IDR: u32,
+    ODR: u32,
+    BSRR: u32,
+    BRR: u32,
+    LCKR: u32
 }
 
 extern {
@@ -633,13 +633,13 @@ extern {
     pub fn HAL_GPIO_WritePin(GPIOx: &mut GPIO_TypeDef, GPIO_Pin: u16, PinState: u32);
 }
 
-pub fn Init(GPIOx: &mut GPIO_TypeDef, GPIO_Init: &GPIO_InitTypeDef) -> () {
+pub fn Init(GPIOx: &mut TypeDef, GPIO_Init: &GPIO_InitTypeDef) -> () {
     unsafe {
         HAL_GPIO_Init(GPIOx, GPIO_Init);
     }
 }
 
-pub fn WritePin(GPIOx: &mut GPIO_TypeDef, GPIO_Pin: u16, PinState: u32) -> () {
+pub fn WritePin(GPIOx: &mut TypeDef, GPIO_Pin: u16, PinState: u32) -> () {
     unsafe {
         HAL_GPIO_WritePin(GPIOx, GPIO_Pin, PinState);
     }
@@ -663,6 +663,44 @@ pub fn GPIOA_CLK_ENABLE() -> () {
     }
 }
 ```
+
+名前空間を調節したので、呼び出し側の見た目は次のようになる。
+
+```
+extern crate stm32f1xx_hal_gpio;
+use stm32f1xx_hal_gpio::{GPIOA, GPIO_PIN_5};
+
+#[no_mangle]
+// mangling(名前修飾)を使わない。
+#[start] // エントリーポイントを指定。
+pub extern "C" fn main() {
+
+    stm32f1xx_hal_gpio::GPIOA_CLK_ENABLE();
+
+    let mut gpio_init_struct = stm32f1xx_hal_gpio::GPIO_InitTypeDef{Pin: 0, Mode: 0, Pull: 0, Speed: 0};
+    gpio_init_struct.Pin = 0x0020;
+    gpio_init_struct.Mode = 0x0001;
+    gpio_init_struct.Speed = 0x0002;
+
+    stm32f1xx_hal_gpio::Init(GPIOA(), &gpio_init_struct);
+
+    loop {
+        stm32f1xx_hal_gpio::WritePin(GPIOA(), GPIO_PIN_5, 1);
+        for _ in 1..400000 {
+            unsafe {
+                asm!("");
+            }
+        }
+        stm32f1xx_hal_gpio::WritePin(GPIOA(), GPIO_PIN_5, 0);
+        for _ in 1..400000 {
+            unsafe {
+                asm!("");
+            }
+        }
+    }
+}
+```
+
 
 ## Cargo 化
 

@@ -20,10 +20,13 @@ stm32f1xx_hal_gpio.o: cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm3
 libstm32f1xx_hal_gpio.rlib: src/stm32f1xx_hal_gpio.rs
 	$(RUSTC) --crate-type=lib -o $@ $<
 
+libsysteminit.rlib: src/systeminit.rs
+	$(RUSTC) --crate-type=lib -o $@ $<
+
 main.o: src/main-hal.rs libstm32f1xx_hal_gpio.rlib
 	$(RUSTC) --emit obj -L . -o $@ $<
 
-led.elf: main.o startup_stm32f103xb.o stm32f1xx_hal_gpio.o libstm32f1xx_hal_gpio.rlib
+led.elf: main.o startup_stm32f103xb.o stm32f1xx_hal_gpio.o libstm32f1xx_hal_gpio.rlib libsysteminit.rlib
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 .PHONY: flash
