@@ -9,7 +9,7 @@ RUSTC=rustc -g -O -Z no-landing-pads --target thumbv6m-none-eabi --emit obj -L .
 startup_stm32f103xb.o: cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
 	$(AS) $(CFLAGS) -o $@ $<
 
-main.o: src/main.rs
+main.o: src/main-rust.rs
 	$(RUSTC) -o $@ $<
 
 led.elf: main.o startup_stm32f103xb.o

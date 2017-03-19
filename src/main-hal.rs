@@ -15,31 +15,23 @@ use stm32f1xx_hal_gpio::*;
 #[start] // エントリーポイントを指定。
 pub extern "C" fn main() {
 
-    let apb2enr = (RCC_BASE + APB2ENR_OFFSET) as *mut u32;
-    let crl = (GPIOA_BASE + CRL_OFFSET) as *mut u32;
+    GPIOA_CLK_ENABLE();
 
-    unsafe {
-        volatile_store(apb2enr, *apb2enr | (1 << 2));
-        volatile_store(crl, *crl & (!(6 << 20)));
-        volatile_store(crl, *crl | (2 << 20));
-    }
+    let mut gpio_init_struct = GPIO_InitTypeDef{Pin: 0, Mode: 0, Pull: 0, Speed: 0};
+    gpio_init_struct.Pin = 0x0020;
+    gpio_init_struct.Mode = 0x0001;
+    gpio_init_struct.Speed = 0x0002;
 
-    let bsrr = (GPIOA_BASE + BSRR_OFFSET) as *mut u32;
+    Init(GPIOA(), &gpio_init_struct);
 
     loop {
-        unsafe {
-            volatile_store(bsrr, 1 << GPIO_PIN_5); // 点灯
-        }
+        WritePin(GPIOA(), 0x0020, 1);
         for _ in 1..400000 {
             unsafe {
                 asm!("");
             }
         }
-
-        unsafe {
-            volatile_store(bsrr, (1 << GPIO_PIN_5) << 16); // 消灯
-        }
-
+        WritePin(GPIOA(), 0x0020, 0);
         for _ in 1..400000 {
             unsafe {
                 asm!("");

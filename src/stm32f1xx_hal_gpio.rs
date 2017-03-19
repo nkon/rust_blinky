@@ -1,6 +1,9 @@
 #![no_std]
 #![allow(non_snake_case)]
 
+#![feature(core_intrinsics)] // core_intrinsics を使う。
+use core::intrinsics::volatile_store; // メモリ直書きには volatile_store を使う。
+
 // レジスタアドレスの定義
 pub const PERIPH_BASE: u32      = 0x40000000;
 
@@ -42,3 +45,39 @@ pub struct GPIO_TypeDef {
     pub BRR: u32,
     pub LCKR: u32
 }
+
+extern {
+    pub fn HAL_GPIO_Init(GPIOx: &mut GPIO_TypeDef, GPIO_Init: &GPIO_InitTypeDef);
+    pub fn HAL_GPIO_WritePin(GPIOx: &mut GPIO_TypeDef, GPIO_Pin: u16, PinState: u32);
+}
+
+pub fn Init(GPIOx: &mut GPIO_TypeDef, GPIO_Init: &GPIO_InitTypeDef) -> () {
+    unsafe {
+        HAL_GPIO_Init(GPIOx, GPIO_Init);
+    }
+}
+
+pub fn WritePin(GPIOx: &mut GPIO_TypeDef, GPIO_Pin: u16, PinState: u32) -> () {
+    unsafe {
+        HAL_GPIO_WritePin(GPIOx, GPIO_Pin, PinState);
+    }
+}
+
+pub fn GPIOA() -> &'static mut GPIO_TypeDef {unsafe {&mut *(GPIOA_BASE as *mut GPIO_TypeDef)}}
+
+/*
+#define __HAL_RCC_GPIOA_CLK_ENABLE()   do { \
+                                        __IO uint32_t tmpreg; \
+                                        SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);\
+                                        /* Delay after an RCC peripheral clock enabling */\
+                                        tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);\
+                                        UNUSED(tmpreg); \
+                                      } while(0)
+*/
+pub fn GPIOA_CLK_ENABLE() -> () {
+    let apb2enr = (RCC_BASE + APB2ENR_OFFSET) as *mut u32;
+    unsafe {
+        volatile_store(apb2enr, *apb2enr | (1 << 2));
+    }
+}
+

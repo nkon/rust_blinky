@@ -594,6 +594,76 @@ main.o: src/main-hal.rs libstm32f1xx_hal_gpio.rlib
 	$(RUSTC) --emit obj -L . -o $@ $<
 ```
 
+## HAL をリンクする
+
+このように、MCUのレジスタ・アドレスをデータシートで調べてバイナリを書き込めば、Rust でプログラムできる。しかし、いちいち調べるのもたいへんだ。そのために CubeMXやHALが用意されているが、それは C で書かれている。Rust の FFI(多言語インタフェース)を使って、Cで書かれたHALをリンクすれば良い。
+
+一方、`src/stm32f1xx_hal_gpio.rs` には `cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c`で定義された APIを呼ぶスタブを作成する。
+
+* C と互換性のある構造体の定義は `#[repr(C)]`を使う。
+* CのHALは`extern`で参照する。
+* スタブを定義して、`unsafe`でCのHALを呼ぶ。
+* `GPIOA`は、CのHALでは`GPIO_TypeDef`にキャストされた絶対アドレスだったが、Rustでは絶対アドレスを返す関数とする。
+* マクロ定義されているユーティリティは、自前で定義する。
+
+スタブを呼ばなければならないのが、安全のためのコストと捉えるか、勿体ないと感じるか(関数感で最適化してくれる?)。
+
+```
+#[repr(C)] // C の struct のインポート
+pub struct GPIO_InitTypeDef {
+    pub Pin: u32,
+    pub Mode: u32,
+    pub Pull: u32,
+    pub Speed: u32
+}
+
+#[repr(C)]
+pub struct GPIO_TypeDef {
+    pub CRL: u32,
+    pub CRH: u32,
+    pub IDR: u32,
+    pub ODR: u32,
+    pub BSRR: u32,
+    pub BRR: u32,
+    pub LCKR: u32
+}
+
+extern {
+    pub fn HAL_GPIO_Init(GPIOx: &mut GPIO_TypeDef, GPIO_Init: &GPIO_InitTypeDef);
+    pub fn HAL_GPIO_WritePin(GPIOx: &mut GPIO_TypeDef, GPIO_Pin: u16, PinState: u32);
+}
+
+pub fn Init(GPIOx: &mut GPIO_TypeDef, GPIO_Init: &GPIO_InitTypeDef) -> () {
+    unsafe {
+        HAL_GPIO_Init(GPIOx, GPIO_Init);
+    }
+}
+
+pub fn WritePin(GPIOx: &mut GPIO_TypeDef, GPIO_Pin: u16, PinState: u32) -> () {
+    unsafe {
+        HAL_GPIO_WritePin(GPIOx, GPIO_Pin, PinState);
+    }
+}
+
+pub fn GPIOA() -> &'static mut GPIO_TypeDef {unsafe {&mut *(GPIOA_BASE as *mut GPIO_TypeDef)}}
+
+/*
+#define __HAL_RCC_GPIOA_CLK_ENABLE()   do { \
+                                        __IO uint32_t tmpreg; \
+                                        SET_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);\
+                                        /* Delay after an RCC peripheral clock enabling */\
+                                        tmpreg = READ_BIT(RCC->APB2ENR, RCC_APB2ENR_IOPAEN);\
+                                        UNUSED(tmpreg); \
+                                      } while(0)
+*/
+pub fn GPIOA_CLK_ENABLE() -> () {
+    let apb2enr = (RCC_BASE + APB2ENR_OFFSET) as *mut u32;
+    unsafe {
+        volatile_store(apb2enr, *apb2enr | (1 << 2));
+    }
+}
+```
+
 ## Cargo 化
 
 ビルドシステムを Makefile から Cargo に移行する。ただし、クロスコンパイル環境なので xargo というラッパを通して使う。
@@ -601,10 +671,6 @@ main.o: src/main-hal.rs libstm32f1xx_hal_gpio.rlib
 ```
 $ cargo install xargo
 ```
-
-## HAL をリンクする
-
-このように、MCUのレジスタ・アドレスをデータシートで調べてバイナリを書き込めば、Rust でプログラムできる。しかし、いちいち調べるのもたいへんだ。そのために CubeMXやHALが用意されているが、それは C で書かれている。Rust の FFI(多言語インタフェース)を使って、Cで書かれたHALをリンクすれば良い。
 
 
 ## Cargo + build.rs
