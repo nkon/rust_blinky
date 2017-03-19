@@ -1,5 +1,5 @@
 #![no_std]
-mod stm32f1xx_hal_gpio {
+#![allow(non_snake_case)]
 
 // レジスタアドレスの定義
 pub const PERIPH_BASE: u32      = 0x40000000;
@@ -42,7 +42,3 @@ pub struct GPIO_TypeDef {
     pub BRR: u32,
     pub LCKR: u32
 }
-
-
-}
-

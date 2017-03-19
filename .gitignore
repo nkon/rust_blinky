@@ -4,5 +4,6 @@ target
 *.bin
 *.hex
 *.elf
+*.rlib
 Cargo.lock
 cubemx/nucleo-f103rb/Debug/*

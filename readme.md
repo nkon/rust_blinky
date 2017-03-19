@@ -497,9 +497,110 @@ Detaching from program: ~/src/rust/led/led.elf, Remote target
 Ending remote debugging.
 ```
 
+### VS Code でのデバッグ
+
 同様に、VS Code を使っているなら、[Native Debug Plugin](https://marketplace.visualstudio.com/items?itemName=webfreak.debug)を使えは、`.vscode/launch.json` を設定することで、IDEからデバッグできる。
 
 ![vscode-gdb.png](vscode-gdb.png)
+
+## クロス環境での分割コンパイル
+
+次に、HAL依存部分をモジュールにする。
+
+モジュールのルートは `src/mod.rs` なので、次のように書く。
+
+```
+// src/mod.rs
+pub mod stm32f1xx_hal_gpio;
+```
+
+stm32f1xx_hal_gpio モジュール自体は、`src/stm32f1xx_hal_gpio.rs` に書く。
+
+* `#![allow(non_snake_case)]`はスネークケースに関する警告を消す。
+
+```
+// src/stm32f1xx_hal_gpio.rs
+
+#![no_std]
+#![allow(non_snake_case)]
+
+// レジスタアドレスの定義
+pub const PERIPH_BASE: u32      = 0x40000000;
+
+pub const APB2PERIPH_BASE: u32  = PERIPH_BASE + 0x10000;
+pub const GPIOA_BASE: u32       = APB2PERIPH_BASE + 0x0800;
+pub const CRL_OFFSET: u32       = 0x00;
+pub const BSRR_OFFSET: u32      = 0x10;
+pub const GPIO_PIN_5: u32       = 5;
+
+pub const AHBPERIPH_BASE: u32   = PERIPH_BASE + 0x20000;
+pub const RCC_BASE: u32         = AHBPERIPH_BASE + 0x1000;
+pub const CR_OFFSET: u32        = 0x00;
+pub const CFGR_OFFSET: u32      = 0x04;
+pub const CIR_OFFSET: u32       = 0x08;
+pub const APB2ENR_OFFSET: u32   = 0x18;
+
+pub const FLASH_BASE: u32       = 0x08000000;
+pub const VECT_TAB_OFFSET: u32  = 0x0;
+pub const VTOR_OFFSET: u32      = 8;
+
+pub const SCS_BASE: u32         = 0xE000E000;
+pub const SCB_BASE: u32         = SCS_BASE + 0x0D00;
+
+#[repr(C)] // C の struct のインポート
+pub struct GPIO_InitTypeDef {
+    pub Pin: u32,
+    pub Mode: u32,
+    pub Pull: u32,
+    pub Speed: u32
+}
+
+#[repr(C)]
+pub struct GPIO_TypeDef {
+    pub CRL: u32,
+    pub CRH: u32,
+    pub IDR: u32,
+    pub ODR: u32,
+    pub BSRR: u32,
+    pub BRR: u32,
+    pub LCKR: u32
+}
+```
+
+こうしておけば、main.rs で次のように書いて、モジュールの中で定義した定数を使える。
+
+```
+extern crate stm32f1xx_hal_gpio;
+use stm32f1xx_hal_gpio::*;
+```
+
+Makefileでは、モジュールのコンパイルオプションに工夫が必要。
+
+* モジュールでは `--crate-type=lib` を付けて、生成物の名前を `lib*.rlib`にする。
+* バイナリでは `--emit obj`を付けて、`-L`でライブラリパスを指定する。
+
+```
+CC=arm-none-eabi-gcc
+AS=arm-none-eabi-as
+RUSTC=rustc -g -O -Z no-landing-pads --target thumbv6m-none-eabi -L ../libcore-thumbv6m
+
+startup_stm32f103xb.o: cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
+	$(AS) $(CFLAGS) -o $@ $<
+
+libstm32f1xx_hal_gpio.rlib: src/stm32f1xx_hal_gpio.rs
+	$(RUSTC) --crate-type=lib -o $@ $<
+
+main.o: src/main-hal.rs libstm32f1xx_hal_gpio.rlib
+	$(RUSTC) --emit obj -L . -o $@ $<
+```
+
+## Cargo 化
+
+ビルドシステムを Makefile から Cargo に移行する。ただし、クロスコンパイル環境なので xargo というラッパを通して使う。
+
+```
+$ cargo install xargo
+```
 
 ## HAL をリンクする
 

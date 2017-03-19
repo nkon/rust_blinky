@@ -9,7 +9,7 @@ LDFLAGS=-specs=nosys.specs -specs=nano.specs -Tcubemx/nucleo-f103rb/STM32F103RBT
 
 CC=arm-none-eabi-gcc
 AS=arm-none-eabi-as
-RUSTC=rustc -g -O -Z no-landing-pads --target thumbv6m-none-eabi --emit obj -L ../libcore-thumbv6m
+RUSTC=rustc -g -O -Z no-landing-pads --target thumbv6m-none-eabi -L ../libcore-thumbv6m
 
 startup_stm32f103xb.o: cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
 	$(AS) $(CFLAGS) -o $@ $<
@@ -17,13 +17,13 @@ startup_stm32f103xb.o: cubemx/nucleo-f103rb/startup/startup_stm32f103xb.s
 stm32f1xx_hal_gpio.o: cubemx/nucleo-f103rb/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c
 	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) $(CFLAGS2) -o $@ $<
 
-stm32f1xx_hal_gpio.rs.o: src/stm32f1xx_hal_gpio.rs
-	$(RUSTC) -o $@ $<
+libstm32f1xx_hal_gpio.rlib: src/stm32f1xx_hal_gpio.rs
+	$(RUSTC) --crate-type=lib -o $@ $<
 
-main.o: src/main.rs
-	$(RUSTC) -o $@ $<
+main.o: src/main-hal.rs libstm32f1xx_hal_gpio.rlib
+	$(RUSTC) --emit obj -L . -o $@ $<
 
-led.elf: main.o startup_stm32f103xb.o stm32f1xx_hal_gpio.o stm32f1xx_hal_gpio.rs.o
+led.elf: main.o startup_stm32f103xb.o stm32f1xx_hal_gpio.o libstm32f1xx_hal_gpio.rlib
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 .PHONY: flash
@@ -32,4 +32,4 @@ flash: led.elf
 
 .PHONY: clean
 clean:
-	rm *.elf *.o *.map
+	rm *.elf *.o *.map *.rlib

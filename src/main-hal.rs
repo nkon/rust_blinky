@@ -7,32 +7,8 @@
 #![feature(core_intrinsics)] // core_intrinsics を使う。
 use core::intrinsics::volatile_store; // メモリ直書きには volatile_store を使う。
 
-use stm32f1xx_hal_gpio;
-
-extern crate libc;
-
-// レジスタアドレスの定義
-pub const PERIPH_BASE: u32 = 0x40000000;
-
-pub const APB2PERIPH_BASE: u32 = PERIPH_BASE + 0x10000;
-pub const GPIOA_BASE: u32 = APB2PERIPH_BASE + 0x0800;
-pub const CRL_OFFSET: u32 = 0x00;
-pub const BSRR_OFFSET: u32 = 0x10;
-pub const GPIO_PIN_5: u32 = 5;
-
-pub const AHBPERIPH_BASE: u32 = PERIPH_BASE + 0x20000;
-pub const RCC_BASE: u32 = AHBPERIPH_BASE + 0x1000;
-pub const CR_OFFSET: u32 = 0x00;
-pub const CFGR_OFFSET: u32 = 0x04;
-pub const CIR_OFFSET: u32 = 0x08;
-pub const APB2ENR_OFFSET: u32 = 0x18;
-
-pub const FLASH_BASE: u32 = 0x08000000;
-pub const VECT_TAB_OFFSET: u32 = 0x0;
-pub const VTOR_OFFSET: u32 = 8;
-
-pub const SCS_BASE: u32 = 0xE000E000;
-pub const SCB_BASE: u32 = SCS_BASE + 0x0D00;
+extern crate stm32f1xx_hal_gpio;
+use stm32f1xx_hal_gpio::*;
 
 #[no_mangle]
 // mangling(名前修飾)を使わない。
@@ -73,6 +49,7 @@ pub extern "C" fn main() {
 }
 
 #[no_mangle]
+#[allow(non_snake_case)]
 pub extern "C" fn SystemInit() {
     let rcc_cr = (RCC_BASE + CR_OFFSET) as *mut u32;
     let rcc_cfgr = (RCC_BASE + CFGR_OFFSET) as *mut u32;
